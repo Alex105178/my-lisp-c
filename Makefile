@@ -14,7 +14,7 @@ test-sexp: src/test-sexp.c obj/sexp.o obj/dyn-string.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 run-test-sexp: test-sexp
-	./$>
+	./$<
 
 $(OBJS): obj/%.o: src/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@
