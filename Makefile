@@ -1,16 +1,16 @@
 CC := gcc
 CFLAGS := -g
 C_INCLUDE_PATH := inc
-OBJS := sexp dyn-string
+OBJS := dyn-string sexp sexp-parser
 OBJS := $(foreach obj,$(OBJS), obj/$(obj).o)
 
 .PHONY: all
 all: main
 
-main: src/main.c obj/sexp.o obj/dyn-string.o
+main: src/main.c obj/sexp.o obj/dyn-string.o obj/sexp-parser.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-test-sexp: src/test-sexp.c obj/sexp.o obj/dyn-string.o
+test-sexp: src/test-sexp.c obj/sexp.o obj/dyn-string.o obj/sexp-parser.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 run-test-sexp: test-sexp

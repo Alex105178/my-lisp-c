@@ -2,6 +2,7 @@
 
 #include "../inc/dyn-string.h"
 #include "../inc/sexp.h"
+#include "../inc/sexp-parser.h"
 
 int main(int argc, char *argv[]) {
     struct ParseRes res = parse_sexp(argv[1]);

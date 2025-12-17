@@ -7,6 +7,7 @@
 
 #include "../inc/dyn-string.h"
 #include "../inc/sexp.h"
+#include "../inc/sexp-parser.h"
 
 struct String* test(char* input) {
     struct ParseRes res = parse_sexp(input);
