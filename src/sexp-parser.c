@@ -29,8 +29,10 @@ const char *parse_error_to_str(enum ParseError pe) {
         mem = malloc(len);
         memcpy(mem, str, len);
         return mem;
-    case PE_INVALID_DOT_LOC:
-        str = "Invalid Dot '.' notation";
+    case PE_INVALID_DOT_NOTATION:
+        str = "Invalid Dot '.' notation.\n"
+              "There must be at least one s-expression before the dot and "
+              "exactly one s-expression after the dot.";
         len = strlen(str) + 1;
         mem = malloc(len);
         memcpy(mem, str, len);
@@ -129,10 +131,14 @@ struct ParseRes parse_sexp_list(const char *str) {
                     cur->val.list.cdr = res.val.good.sexp;
                     return (struct ParseRes){PE_NONE, {root, next + 1}};
                 } else {
-                    return (struct ParseRes){PE_INVALID_DOT_NOTATION, {.bad = tok.next_char}};
+                    struct ParseRes res = {PE_INVALID_DOT_NOTATION,
+                                           {.bad = tok.next_char}};
+                    return res;
                 }
             } else {
-                assert(false);
+                struct ParseRes res = {PE_INVALID_DOT_NOTATION,
+                                       {.bad = tok.next_char}};
+                return res;
             }
         }
         struct ParseRes res = parse_sexp(next);
@@ -157,7 +163,7 @@ struct ParseRes parse_sexp(const char* str) {
     case T_SYMBOL:
         return parse_symbol(next);
     case T_DOT:
-        return (struct ParseRes){PE_INVALID_DOT_LOC, {.bad = next}};
+        return (struct ParseRes){PE_INVALID_DOT_NOTATION, {.bad = next}};
     case T_EOF:
         return (struct ParseRes){PE_UNBAL_L_PAREN, {.bad = next}};
     }

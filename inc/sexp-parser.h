@@ -6,7 +6,6 @@ enum ParseError {
     PE_NONE,
     PE_UNBAL_R_PAREN,
     PE_UNBAL_L_PAREN,
-    PE_INVALID_DOT_LOC,
     PE_INVALID_DOT_NOTATION,
 };
 
