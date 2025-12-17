@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dyn-string.h"
+#include "../inc/dyn-string.h"
 
 struct String* string_alloc(unsigned int size) {
     if (size == 0) {

@@ -4,8 +4,8 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "sexp.h"
-#include "dyn-string.h"
+#include "../inc/sexp.h"
+#include "../inc/dyn-string.h"
 
 // #define NDEBUG
 

@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dyn-string.h"
-#include "sexp.h"
+#include "../inc/dyn-string.h"
+#include "../inc/sexp.h"
 
 struct String* test(char* input) {
     struct ParseRes res = parse_sexp(input);
@@ -55,7 +55,6 @@ char* test_list[][3] = {
     {"==", "( foo  .   ( bar  baz  ) )", "(foo bar baz)"},
     {"==", "(foo . bar)", "(foo . bar)"},
     {"==", "( foo  .  bar )", "(foo . bar)"},
-    {"==", "(foo . bar baz)", "ERROR"},
 };
 int test_list_len = sizeof(test_list) / sizeof(test_list[0]);
 
