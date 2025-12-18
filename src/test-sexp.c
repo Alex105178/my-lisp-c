@@ -28,12 +28,23 @@ void run_tests(char* list[][3], int len) {
         if (0 == strcmp(entry[0], "==")) {
             struct String* result = test(entry[1]);
             if (result == NULL) {
-                printf("Test %d failed.\n", i);
-                num_fail += 1;                
+                /* If an error occurred when parsing,
+                   check if that was supposed to happen. */
+                if (0 == strcmp("ERROR", entry[2])) {
+                    num_success += 1;
+                } else {
+                    num_fail += 1;
+                    printf("Test %d failed:\n  \"%s\" -x-> \"%s\"\n  \"%s\" ---> %s\n",
+                       i, entry[1], entry[2], entry[1], "ERROR");
+                }
             } else if (0 == strcmp(result->mem, entry[2])) {
                 num_success += 1;
+                free(result->mem);
             } else {
+                printf("Test %d failed:\n  \"%s\" -x-> \"%s\"\n  \"%s\" ---> \"%s\"\n",
+                       i, entry[1], entry[2], entry[1], result->mem);
                 num_fail += 1;
+                free(result->mem);
             }
         } else {
             fprintf(stderr, "Error, invalid compare operator!");
@@ -56,6 +67,14 @@ char* test_list[][3] = {
     {"==", "( foo  .   ( bar  baz  ) )", "(foo bar baz)"},
     {"==", "(foo . bar)", "(foo . bar)"},
     {"==", "( foo  .  bar )", "(foo . bar)"},
+    {"==", "(.)", "ERROR"},
+    {"==", "( . )", "ERROR"},
+    {"==", "(. foo)", "ERROR"},
+    {"==", "( .  foo )", "ERROR"},
+    {"==", "(foo .)", "ERROR"},
+    {"==", "( foo  . )", "ERROR"},
+    {"==", "(foo . bar baz)", "ERROR"},
+    {"==", "( foo  .  bar  baz )", "ERROR"},
 };
 int test_list_len = sizeof(test_list) / sizeof(test_list[0]);
 
