@@ -16,3 +16,9 @@ void string_add(struct String* s1, struct String* s2);
 void string_add_char(struct String* s, char c);
 void string_add_bytes(struct String* s, const char* mem, unsigned int size);
 void string_add_cstr(struct String* string, const char* str);
+
+int string_cmp(struct String* s1, struct String* s2);
+int string_cmp_cstr(struct String* s, const char* cstr);
+
+bool string_eq(struct String* s1, struct String* s2);
+bool string_eq_cstr(struct String* s, const char* cstr);

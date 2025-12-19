@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,4 +62,54 @@ void string_add_bytes(struct String* s, const char* mem, unsigned int size) {
 void string_add_cstr(struct String* s, const char* cstr) {
     unsigned int len = strlen(cstr);
     string_add_bytes(s, cstr, len);
+}
+
+int string_cmp(struct String* s1, struct String* s2) {
+    unsigned int min_len = s1->length < s2->length ? s1->length : s2->length;
+    int res = strncmp(s1->mem, s2->mem, min_len);
+    if (res == 0) {
+        if (s1->length < s2->length) {
+            return -1 * s2->mem[min_len];
+        } else if (s1->length > s2->length) {
+            return s1->mem[min_len];
+        } else {
+            return 0;
+        }
+    } else {
+        return res;
+    }
+}
+
+int string_cmp_cstr(struct String* s, const char* cstr) {
+    unsigned int cstr_len = strlen(cstr);
+    unsigned int min_len = s->length < cstr_len ? s->length : cstr_len;
+    int res = strncmp(s->mem, cstr, min_len);
+    if (res == 0) {
+        if (s->length < cstr_len) {
+            return -1 * cstr[min_len];
+        } else if (s->length > cstr_len) {
+            return s->mem[min_len];
+        } else {
+            return 0;
+        }
+    } else {
+        return res;
+    }
+}
+
+bool string_eq(struct String* s1, struct String* s2) {
+    if (s1->length != s2->length) {
+        return false;
+    } else {
+        return 0 == strncmp(s1->mem, s2->mem, s1->length);
+    }
+}
+
+bool string_eq_cstr(struct String* s, const char* cstr) {
+    unsigned int cstr_len = strlen(cstr);
+    if (s->length != cstr_len) {
+        return false;
+    } else {
+        return 0 == strncmp(s->mem, cstr, s->length);
+    }
 }
