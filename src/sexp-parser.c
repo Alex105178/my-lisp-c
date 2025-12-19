@@ -88,11 +88,9 @@ struct ParseRes parse_symbol(const char* str) {
     }
     assert(start != next);
     int num_symbol_chars = next - start;
-    char* sym_str = malloc(sizeof(char) * (num_symbol_chars + 1));
-    memcpy(sym_str, start, num_symbol_chars);
-    sym_str[num_symbol_chars] = '\0';
+    struct String* string = string_from_bytes(start, num_symbol_chars);
     // todo: Update to use line and col values.
-    struct Sexp* sexp = sexp_symbol(sym_str, 0, 0);
+    struct Sexp* sexp = sexp_symbol(string, 0, 0);
     struct ParseRes res = {PE_NONE, {sexp, next}};
     return res;
 }

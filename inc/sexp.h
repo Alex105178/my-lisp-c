@@ -9,7 +9,7 @@
  * '(', ')', ' ', '\n', '\r', or '\0'.
  */
 struct Symbol {
-    const char *str; // Has ownership.
+    struct String* str; // Has ownership.
     u_int32_t line;
     u_int32_t col;
 };
@@ -33,5 +33,6 @@ extern struct Sexp Nil;
 
 void string_sexp(struct Sexp* sexp, struct String* string);
 struct Sexp* sexp_cons(struct Sexp *car, struct Sexp *cdr);
-struct Sexp* sexp_symbol(const char* string, u_int32_t line, u_int32_t column);
+struct Sexp* sexp_symbol(struct String* string, u_int32_t line,
+                         u_int32_t column);
 void sexp_free(struct Sexp* sexp);

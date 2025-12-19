@@ -15,16 +15,16 @@ void string_sexp(struct Sexp *sexp, struct String *string) {
         string_add(string, sexp->val.sym->str);
     } else {
         struct Sexp* cur = sexp;
-        string_add(string, "(");
+        string_add_char(string, '(');
         while (cur != &Nil) {
             if (cur->type == LIST) {
                 string_sexp(cur->val.list.car, string);
                 if (cur->val.list.cdr != &Nil) {
-                    string_add(string, " ");
+                    string_add_char(string, ' ');
                 }
                 cur = cur->val.list.cdr;
             } else {
-                string_add(string, ". ");
+                string_add_cstr(string, ". ");
                 string_add(string, cur->val.sym->str);
                 cur = &Nil;
             }
@@ -32,10 +32,10 @@ void string_sexp(struct Sexp *sexp, struct String *string) {
         if (cur->type == SYM) {
             
         }
-        string_add(string, ")");
+        string_add_char(string, ')');
     }
 }
-
+\
 struct Sexp* sexp_cons(struct Sexp *car, struct Sexp *cdr) {
     struct Sexp *sexp = malloc(sizeof(struct Sexp));
     sexp->type = LIST;
@@ -51,7 +51,8 @@ struct Sexp* sexp_cons(struct Sexp *car, struct Sexp *cdr) {
  *   [line] Line on which this symbol appeared.
  *   [column] Column on the line where this symbol appeared.
  */
-struct Sexp* sexp_symbol(const char* string, u_int32_t line, u_int32_t column) {
+struct Sexp* sexp_symbol(struct String* string, u_int32_t line,
+                         u_int32_t column) {
     struct Symbol* symbol = malloc(sizeof(struct Symbol));
     symbol->str = string;
     symbol->line = line;

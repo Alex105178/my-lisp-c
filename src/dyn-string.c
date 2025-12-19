@@ -14,18 +14,51 @@ struct String* string_alloc(unsigned int size) {
     return string;
 }
 
-void string_free(struct String* string) {
-    free(string->mem);
-    free(string);
+void string_free(struct String* s) {
+    free(s->mem);
+    free(s);
 }
 
-void string_add(struct String* string, const char* str) {
-    int str_len = strlen(str);
-    int str_sz = str_len + 1;
-    while (string->size - string->length < str_sz) {
-        string->mem = realloc(string->mem, string->size * 2);
-        string->size = string->size * 2;
+struct String* string_from_bytes(const char* mem, unsigned int size) {
+    struct String* s = string_alloc(size);
+    memcpy(s->mem, mem, size);
+    s->length = size;
+    return s;
+}
+
+struct String* string_from_cstr(const char* cstr) {
+    unsigned int len = strlen(cstr);
+    return string_from_bytes(cstr, len);
+}
+
+void string_add(struct String* s1, struct String* s2) {
+    while (s1->size - s1->length < s2->length) {
+        s1->mem = realloc(s1->mem, s1->size * 2);
+        s1->size *= 2;
     }
-    memcpy(string->mem + string->length, str, str_sz);
-    string->length = string->length + str_len;
+    memcpy(s1->mem + s1->length, s2->mem, s2->length);
+    s1->length = s1->length + s2->length;
+}
+
+void string_add_char(struct String* s, char c) {
+    if (s->size - s->length == 0) {
+        s->mem = realloc(s->mem, s->size * 2);
+        s->size *= 2;
+    }
+    s->mem[s->length] = c;
+    s->length++;
+}
+
+void string_add_bytes(struct String* s, const char* mem, unsigned int size) {
+    while (s->size - s->length < size) {
+        s->mem = realloc(s->mem, s->size * 2);
+        s->size *= 2;
+    }
+    memcpy(s->mem + s->length, mem, size);
+    s->length = s->length + size;
+}
+
+void string_add_cstr(struct String* s, const char* cstr) {
+    unsigned int len = strlen(cstr);
+    string_add_bytes(s, cstr, len);
 }
