@@ -20,4 +20,4 @@ $(OBJS): obj/%.o: src/%.c
 
 .PHONY: clean
 clean:
-	rm -f main test-sexp obj/sexp.o obj/dyn-string.o
+	rm -f main test-sexp $(OBJS)
