@@ -14,6 +14,11 @@ struct String* string_alloc(unsigned int size) {
     return string;
 }
 
+void string_free(struct String* string) {
+    free(string->mem);
+    free(string);
+}
+
 void string_add(struct String* string, const char* str) {
     int str_len = strlen(str);
     int str_sz = str_len + 1;

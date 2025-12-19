@@ -7,4 +7,5 @@ struct String {
 };
 
 struct String* string_alloc(unsigned int size);
+void string_free(struct String* string);
 void string_add(struct String* string, const char* str);
