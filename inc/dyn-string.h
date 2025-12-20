@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 struct String {
     unsigned int length;
     unsigned int size;
