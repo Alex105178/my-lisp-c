@@ -117,7 +117,10 @@ struct Value* eval_integer(struct Sexp* sexp) {
 
 struct Value* eval(struct Sexp* sexp, struct Binding* bindings);
 
-struct Value* eval_intadd(struct Sexp* sexp, struct Binding* bindings) {
+enum INT_OP {INT_ADD, INT_SUB, INT_MUL, INT_DIV};
+
+struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
+                         struct Binding* bindings) {
     struct Sexp* cdr = sexp->val.list.cdr;
     if (cdr->type != LIST) {
         return make_error("Expected a term!");
@@ -144,8 +147,27 @@ struct Value* eval_intadd(struct Sexp* sexp, struct Binding* bindings) {
                         return arg2;
                     }
                     if (arg1->vt == VT_INTEGER && arg2->vt == VT_INTEGER) {
-                        struct Value* res =
-                            make_integer(arg1->val.integer + arg2->val.integer);
+                        long int_a1 = arg1->val.integer;
+                        long int_a2 = arg2->val.integer;
+                        long long_res;
+                        switch (op) {
+                        case INT_ADD:
+                            long_res = int_a1 + int_a2;
+                            break;
+                        case INT_SUB:
+                            long_res = int_a1 - int_a2;
+                            break;
+                        case INT_MUL:
+                            long_res = int_a1 * int_a2;
+                            break;
+                        case INT_DIV:
+                            if (0 == int_a2) {
+                                return make_error("Cannot divide by zero!");
+                            }
+                            long_res = int_a1 / int_a2;
+                            break;
+                        }
+                        struct Value* res = make_integer(long_res);
                         value_dec_ref_or_free(arg1);
                         value_dec_ref_or_free(arg2);
                         return res;
@@ -173,8 +195,14 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
         if (car->type == NIL) {
             return make_error("Empty S-expression list!");
         } else if (car->type == SYM) {
-            if(string_eq_cstr(car->val.sym->str, "+")) {
-                return eval_intadd(sexp, bindings);
+            if (string_eq_cstr(car->val.sym->str, "+")) {
+                return eval_intop(sexp, INT_ADD, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "-")) {
+                return eval_intop(sexp, INT_SUB, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "*")) {
+                return eval_intop(sexp, INT_MUL, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "/")) {
+                return eval_intop(sexp, INT_DIV, bindings);
             } else {
                 return make_error("Invalid form!");
             }
