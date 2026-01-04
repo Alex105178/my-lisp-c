@@ -1,6 +1,6 @@
 CC := gcc
 CFLAGS := -g
-OBJS := dyn-string sexp sexp-parser
+OBJS := dyn-string sexp sexp-parser interpreter
 OBJS := $(foreach obj,$(OBJS), obj/$(obj).o)
 
 .PHONY: all
