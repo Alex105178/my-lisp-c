@@ -79,14 +79,13 @@ void sexp_free_list(struct Sexp* sexp) {
 void sexp_free(struct Sexp* sexp) {
     if (sexp->type == SYM) {
         struct Symbol* sym = sexp->val.sym;
-        free((char*)sym->str);
+        free((char*)sym->str->mem);
+        free(sym->str);
         free(sym);
+        free(sexp);
     } else if (sexp->type == LIST) {
         sexp_free_list(sexp);
-    } // Otherwise, it is NIL, do nothing.
-
-    // There is only one instance of Nil which is not ever freed.
-    if (sexp->type != NIL) {
-        free(sexp);
     }
+    // Otherwise, it is NIL, so do nothing.
+    // There is only one instance of Nil which is not ever freed.
 }
