@@ -24,3 +24,10 @@ int string_cmp_cstr(struct String* s, const char* cstr);
 
 bool string_eq(struct String* s1, struct String* s2);
 bool string_eq_cstr(struct String* s, const char* cstr);
+
+struct string_long_res {
+    long res;
+    bool good;
+};
+struct string_long_res string_to_long(struct String* s);
+struct String* long_to_string(long l);

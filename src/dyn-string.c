@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../inc/dyn-string.h"
 
@@ -112,4 +113,34 @@ bool string_eq_cstr(struct String* s, const char* cstr) {
     } else {
         return 0 == strncmp(s->mem, cstr, s->length);
     }
+}
+
+/* long_res.good is set to true if parsing is successful. Otherwise it is set to
+ * false.
+ */
+struct string_long_res string_to_long(struct String* s) {
+    long acc = 0;
+    unsigned int cur = 0;
+    for (; cur < s->length; cur++) {
+        char digit = s->mem[cur];
+        if ('0' <= digit && digit <= '9') {
+            acc *= 10;
+            acc += digit - '0';
+        } else {
+            if ('-' == digit && 0 == cur) {
+                acc *= -1;
+                break;
+            } else {
+                return (struct string_long_res){0, false};
+            }
+        }
+    }
+    return (struct string_long_res){acc, true};
+}
+
+
+struct String* long_to_string(long l) {
+    static char buf[256];
+    snprintf(buf, 256, "%li", l);
+    return string_from_cstr(buf);
 }
