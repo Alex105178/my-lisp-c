@@ -92,6 +92,7 @@ struct Value* find_binding(struct Binding* binds, struct Symbol* sym) {
     struct Binding* bind = binds;
     while (true) {
         if (string_eq(bind->id->str, sym->str)) {
+            value_inc_ref(bind->val);
             return bind->val;
         } else {
             if (NULL != bind->next) {
@@ -135,15 +136,18 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                 return arg1;
             }
             if (cdr2->type != LIST) {
+                value_dec_ref_or_free(arg1);
                 return make_error("Expected a term!");
             } else {
                 struct Sexp* car3 = cdr2->val.list.car;
                 struct Sexp* cdr3 = cdr->val.list.cdr;
                 if (car3->type == NIL) {
+                    value_dec_ref_or_free(arg1);
                     return make_error("Expected a term!");
                 } else {
                     struct Value* arg2 = eval(car3, bindings);
                     if (arg2->vt == VT_ERROR) {
+                        value_dec_ref_or_free(arg1);
                         return arg2;
                     }
                     if (arg1->vt == VT_INTEGER && arg2->vt == VT_INTEGER) {
@@ -162,6 +166,8 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                             break;
                         case INT_DIV:
                             if (0 == int_a2) {
+                                value_dec_ref_or_free(arg1);
+                                value_dec_ref_or_free(arg2);
                                 return make_error("Cannot divide by zero!");
                             }
                             long_res = int_a1 / int_a2;
@@ -172,6 +178,8 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                         value_dec_ref_or_free(arg2);
                         return res;
                     } else {
+                        value_dec_ref_or_free(arg1);
+                        value_dec_ref_or_free(arg2);
                         return make_error("Invalid argument!");
                     }
                 }
