@@ -85,6 +85,27 @@ struct Value* make_integer(long l) {
 
 struct Value NilV = {VT_SEXP, .val.sexp = &Nil, .ref_count = -1};
 
+struct Binding* add_binding(struct Symbol* id, struct Value* val,
+                            struct Binding* next) {
+    struct Binding* binding = malloc(sizeof(struct Binding));
+    binding->id = id;
+    binding->val = val;
+    binding->next = next;
+    return binding;
+}
+
+struct Binding* free_top_binding(struct Binding* bindings) {
+    if (NULL == bindings) {
+        // TODO: Should this cause an error instead?
+        return bindings;
+    }
+    // bindings->id; Don't free. Belongs to the s-expr being evaluated.
+    value_dec_ref_or_free(bindings->val);
+    struct Binding* next = bindings->next;
+    free(bindings);
+    return next;
+}
+
 struct Value* find_binding(struct Binding* binds, struct Symbol* sym) {
     if (binds == NULL) {
         return make_error("Undefined Variable!");
