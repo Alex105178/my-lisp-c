@@ -209,6 +209,36 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
     }
 }
 
+struct Value* eval_let(struct Sexp* sexp, struct Binding* bindings) {
+    struct Sexp* cdr = sexp->val.list.cdr;
+    struct Sexp* cadr = cdr->val.list.car;
+    struct Sexp* cddr = cdr->val.list.cdr;
+    struct Sexp* id = cadr->val.list.car;
+    struct Sexp* cdadr = cadr->val.list.cdr;
+    struct Sexp* val = cdadr->val.list.car;
+    struct Sexp* cddadr = cdadr->val.list.cdr;
+    struct Sexp* body = cddr->val.list.car;
+    struct Sexp* cdddr = cddr->val.list.cdr;
+
+    bool invalid_form =
+        cdr->type != LIST ||
+        cadr->type != LIST || cddr->type != LIST ||
+        id->type != SYM || cdadr->type != LIST ||
+        val->type == NIL || cddadr->type != NIL ||
+        body->type == NIL || cdddr->type != NIL;
+
+    if (invalid_form) {
+        return make_error("Invalid let form!");
+    }
+
+    struct Value* value = eval(val, bindings);
+    struct Binding* new_bindings = add_binding(id->val.sym, value, bindings);
+    value = NULL;
+    struct Value* res = eval(body, new_bindings);
+    free_top_binding(new_bindings);
+    return res;
+}
+
 struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
     if (sexp->type == SYM) {
         struct Value* v = find_binding(bindings, sexp->val.sym);
@@ -232,6 +262,8 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
                 return eval_intop(sexp, INT_MUL, bindings);
             } else if (string_eq_cstr(car->val.sym->str, "/")) {
                 return eval_intop(sexp, INT_DIV, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "let")) {
+                return eval_let(sexp, bindings);
             } else {
                 return make_error("Invalid form!");
             }
