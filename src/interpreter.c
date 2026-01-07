@@ -94,7 +94,7 @@ struct Binding* add_binding(struct Symbol* id, struct Value* val,
     return binding;
 }
 
-struct Binding* free_top_binding(struct Binding* bindings) {
+struct Binding* dec_ref_top_binding(struct Binding* bindings) {
     if (NULL == bindings) {
         // TODO: Should this cause an error instead?
         return bindings;
@@ -235,7 +235,7 @@ struct Value* eval_let(struct Sexp* sexp, struct Binding* bindings) {
     struct Binding* new_bindings = add_binding(id->val.sym, value, bindings);
     value = NULL;
     struct Value* res = eval(body, new_bindings);
-    free_top_binding(new_bindings);
+    dec_ref_top_binding(new_bindings);
     return res;
 }
 
