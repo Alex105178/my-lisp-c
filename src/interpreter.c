@@ -55,11 +55,12 @@ void value_inc_ref(struct Value* val) {
 }
 
 void value_dec_ref_or_free(struct Value* val) {
+    // If the ref count is -1, that represents an object that cannot be freed.
     if (-1 != val->ref_count) {
-        if (0 == val->ref_count) {
-            value_free(val);
-        } else {
+        if (1 < val->ref_count) {
             val->ref_count--;
+        } else {
+            value_free(val);
         }
     }    
 }
@@ -71,7 +72,7 @@ struct Value* make_error(const char* msg) {
     memcpy(str, msg, msg_size);
     val->vt = VT_ERROR;
     val->val.error = (struct Error){str};
-    val->ref_count = 0;
+    val->ref_count = 1;
     return val;
 };
 
@@ -79,7 +80,7 @@ struct Value* make_integer(long l) {
     struct Value* val = malloc(sizeof(struct Value));
     val->vt = VT_INTEGER;
     val->val.integer = l;
-    val->ref_count = 0;
+    val->ref_count = 1;
     return val;
 }
 
