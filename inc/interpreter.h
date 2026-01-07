@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 enum ValueType {
     VT_ERROR,
     VT_SEXP,
