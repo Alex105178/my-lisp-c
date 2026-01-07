@@ -14,6 +14,7 @@ void run_tests(char* list[][3], int len, struct String* (*test)(char* input)) {
         char** entry = list[i];
         if (0 == strcmp(entry[0], "==")) {
             struct String* result = test(entry[1]);
+            string_add_char(result, '\0');
             if (0 == strcmp(result->mem, entry[2])) {
                 num_success += 1;
                 free(result->mem);
