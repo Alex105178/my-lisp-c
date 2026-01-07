@@ -27,8 +27,21 @@ struct String* value_to_string(struct Value* v) {
         return v->val.boolean ?
             string_from_cstr("true") :
             string_from_cstr("false");
+    case VT_LAMBDA: {
+        struct String* s = string_from_cstr("(lambda (");
+        string_add(s, v->val.lambda->arg->str);
+        string_add_cstr(s, ") ");
+        struct String* body = string_alloc(4);
+        string_sexp(v->val.lambda->body, body);
+        string_add(s, body);
+        string_free(body);
+        string_add_char(s, ')');
+        return s;
+    }
     }
 }
+
+void dec_ref_all_bindings(struct Binding* bindings);
 
 void value_free(struct Value* val) {
     switch (val->vt) {
@@ -47,8 +60,25 @@ void value_free(struct Value* val) {
         sexp_free(val->val.sexp);
         free(val);
         break;
+    case VT_LAMBDA:
+        dec_ref_all_bindings(val->val.lambda->context);
+        free(val->val.lambda);
+        free(val);
     }
-}    
+}
+
+struct Value* value_make_lambda(struct Sexp* body, struct Binding* context,
+                                struct Symbol* arg) {
+    struct Lambda* lambda = malloc(sizeof(struct Lambda));
+    lambda->body = body;
+    lambda->context = context;
+    lambda->arg = arg;
+    struct Value* value = malloc(sizeof(struct Value));
+    value->vt = VT_LAMBDA;
+    value->val.lambda = lambda;
+    value->ref_count = 1;
+    return value;
+}
 
 void value_inc_ref(struct Value* val) {
     val->ref_count++;
@@ -92,7 +122,29 @@ struct Binding* add_binding(struct Symbol* id, struct Value* val,
     binding->id = id;
     binding->val = val;
     binding->next = next;
+    binding->ref_count = 1;
     return binding;
+}
+
+void inc_ref_all_bindings(struct Binding* bindings) {
+    while (bindings != NULL) {
+        struct Binding* next = bindings->next;
+        bindings->ref_count++;
+        bindings = next;
+    }
+}
+
+void dec_ref_all_bindings(struct Binding* bindings) {
+    while (bindings != NULL) {
+        struct Binding* next = bindings->next;
+        if (1 < bindings->ref_count) {
+            bindings->ref_count--;
+        } else {
+            value_dec_ref_or_free(bindings->val);
+            free(bindings);
+        }
+        bindings = next;
+    }
 }
 
 struct Binding* dec_ref_top_binding(struct Binding* bindings) {
@@ -101,9 +153,13 @@ struct Binding* dec_ref_top_binding(struct Binding* bindings) {
         return bindings;
     }
     // bindings->id; Don't free. Belongs to the s-expr being evaluated.
-    value_dec_ref_or_free(bindings->val);
     struct Binding* next = bindings->next;
-    free(bindings);
+    if (1 < bindings->ref_count) {
+        bindings->ref_count--;
+    } else {
+        value_dec_ref_or_free(bindings->val);
+        free(bindings);
+    }
     return next;
 }
 
@@ -240,6 +296,47 @@ struct Value* eval_let(struct Sexp* sexp, struct Binding* bindings) {
     return res;
 }
 
+struct Value* eval_lambda(struct Sexp* sexp, struct Binding* bindings) {
+    struct Sexp* cdr = sexp->val.list.cdr;
+    if (cdr->type != LIST) {
+        return make_error("Expected an argument and body!");
+    }
+    struct Sexp* cadr = cdr->val.list.car;
+    if (cadr->type != LIST) {
+        return make_error("Expected argument list!");
+    }
+    struct Sexp* arg = cadr->val.list.car;
+    if (arg->type != SYM) {
+        return make_error("Argument form must be a symbol!");
+    }
+    struct Sexp* cdadr = cadr->val.list.cdr;
+    if (cdadr->type != NIL) {
+        return make_error("More than one argument!");
+    }
+    struct Sexp* cddr = cdr->val.list.cdr;
+    if (cddr->type != LIST) {
+        return make_error("Expected a body!");
+    }
+    struct Sexp* body = cddr->val.list.car;
+    struct Sexp* cdddr = cddr->val.list.cdr;
+    if (cdddr->type != NIL) {
+        return make_error("Too many forms!");
+    }
+
+    inc_ref_all_bindings(bindings);
+
+    return value_make_lambda(body, bindings, arg->val.sym);
+}
+
+struct Value* eval_apply(struct Lambda* lambda, struct Sexp* arg,
+                         struct Binding* bindings) {
+    struct Value* arg_val = eval(arg, bindings);
+    struct Binding* ctx = add_binding(lambda->arg, arg_val, lambda->context);
+    struct Value* res = eval(lambda->body, ctx);
+    dec_ref_top_binding(ctx);
+    return res;
+}
+
 struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
     if (sexp->type == SYM) {
         struct Value* v = find_binding(bindings, sexp->val.sym);
@@ -265,8 +362,29 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
                 return eval_intop(sexp, INT_DIV, bindings);
             } else if (string_eq_cstr(car->val.sym->str, "let")) {
                 return eval_let(sexp, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "lambda")) {
+                return eval_lambda(sexp, bindings);
             } else {
-                return make_error("Invalid form!");
+                struct Value* maybe_lamb = find_binding(bindings, car->val.sym);
+                if (VT_LAMBDA != maybe_lamb->vt) {
+                    value_dec_ref_or_free(maybe_lamb);
+                    return make_error("Cannot apply non-lambda value!");
+                }
+                struct Sexp* cdr = sexp->val.list.cdr;
+                if (cdr->type != LIST) {
+                    value_dec_ref_or_free(maybe_lamb);
+                    return make_error("Expected an argument!");
+                }
+                struct Sexp* arg = cdr->val.list.car;
+                struct Sexp* cddr = cdr->val.list.cdr;
+                if (cddr->type != NIL) {
+                    value_dec_ref_or_free(maybe_lamb);
+                    return make_error("Expected only one argument!");
+                }
+                struct Value* res =
+                    eval_apply(maybe_lamb->val.lambda, arg, bindings);
+                value_dec_ref_or_free(maybe_lamb);
+                return res;
             }
         } else { // car->type == LIST
             return eval(car, bindings);

@@ -1,10 +1,19 @@
 #pragma once
 
-enum ValueType { VT_ERROR, VT_SEXP, VT_INTEGER, VT_STRING, VT_BOOLEAN };
+enum ValueType {
+    VT_ERROR,
+    VT_SEXP,
+    VT_INTEGER,
+    VT_STRING,
+    VT_BOOLEAN,
+    VT_LAMBDA
+};
 
 struct Error {
     const char* msg;
 };
+
+struct Lambda;
 
 struct Value {
     enum ValueType vt;
@@ -14,6 +23,7 @@ struct Value {
         struct String* string;
         long integer;
         bool boolean;
+        struct Lambda* lambda;
     } val;
     int ref_count;
 };
@@ -22,6 +32,13 @@ struct Binding {
     struct Symbol* id;
     struct Value* val;
     struct Binding* next; // May be NULL
+    unsigned int ref_count;
+};
+
+struct Lambda {
+    struct Sexp* body;
+    struct Binding* context;
+    struct Symbol* arg;
 };
 
 extern struct Value NilV;
