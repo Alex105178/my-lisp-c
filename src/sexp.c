@@ -10,7 +10,7 @@
 
 struct Sexp Nil = {NIL, .val.list = {(void*)NULL, (void*)NULL}};
 
-void string_sexp(struct Sexp *sexp, struct String *string) {
+void sexp_to_string_helper(struct Sexp* sexp, struct String* string) {
     if (sexp->type == SYM) {
         string_add(string, sexp->val.sym->str);
     } else {
@@ -18,7 +18,7 @@ void string_sexp(struct Sexp *sexp, struct String *string) {
         string_add_char(string, '(');
         while (cur != &Nil) {
             if (cur->type == LIST) {
-                string_sexp(cur->val.list.car, string);
+                sexp_to_string_helper(cur->val.list.car, string);
                 if (cur->val.list.cdr != &Nil) {
                     string_add_char(string, ' ');
                 }
@@ -35,7 +35,13 @@ void string_sexp(struct Sexp *sexp, struct String *string) {
         string_add_char(string, ')');
     }
 }
-\
+
+struct String* sexp_to_string(struct Sexp* sexp) {
+    struct String* string = string_alloc(4);
+    sexp_to_string_helper(sexp, string);
+    return string;
+}
+
 struct Sexp* sexp_cons(struct Sexp *car, struct Sexp *cdr) {
     struct Sexp *sexp = malloc(sizeof(struct Sexp));
     sexp->type = LIST;

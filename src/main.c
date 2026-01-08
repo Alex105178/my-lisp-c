@@ -8,8 +8,7 @@
 int main(int argc, char *argv[]) {
     struct ParseRes res = parse_sexp(argv[1]);
     if (res.error == PE_NONE) {
-        struct String *string = string_alloc(2);
-        string_sexp(res.val.good.sexp, string);
+        struct String *string = sexp_to_string(res.val.good.sexp);
         string_add_char(string, '\0');
         printf("%s\n", string->mem);
         printf("Evals to: ");

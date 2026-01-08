@@ -7,8 +7,7 @@
 struct String* test_interpreter(char* input) {
     struct ParseRes res = parse_sexp(input);
     if (res.error == PE_NONE) {
-        struct String* sexp_str = string_alloc(2);
-        string_sexp(res.val.good.sexp, sexp_str);
+        struct String* sexp_str = sexp_to_string(res.val.good.sexp);
         struct Value* v = eval(res.val.good.sexp, NULL);
         struct String* val_str = value_to_string(v);
         value_free(v);

@@ -31,7 +31,7 @@ struct Sexp {
 
 extern struct Sexp Nil;
 
-void string_sexp(struct Sexp* sexp, struct String* string);
+struct String* sexp_to_string(struct Sexp* sexp);
 struct Sexp* sexp_cons(struct Sexp *car, struct Sexp *cdr);
 struct Sexp* sexp_symbol(struct String* string, u_int32_t line,
                          u_int32_t column);

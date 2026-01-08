@@ -13,8 +13,7 @@ struct String* value_to_string(struct Value* v) {
         return string_from_cstr(v->val.error.msg);
         break;
     case VT_SEXP: {
-        struct String* s = string_alloc(8);
-        string_sexp(v->val.sexp, s);
+        struct String* s = sexp_to_string(v->val.sexp);
         return s;
     }
         break;
@@ -31,8 +30,7 @@ struct String* value_to_string(struct Value* v) {
         struct String* s = string_from_cstr("(lambda (");
         string_add(s, v->val.lambda->arg->str);
         string_add_cstr(s, ") ");
-        struct String* body = string_alloc(4);
-        string_sexp(v->val.lambda->body, body);
+        struct String* body = sexp_to_string(v->val.lambda->body);
         string_add(s, body);
         string_free(body);
         string_add_char(s, ')');

@@ -10,8 +10,7 @@
 struct String* test_sexp(char* input) {
     struct ParseRes res = parse_sexp(input);
     if (res.error == PE_NONE) {
-        struct String *string = string_alloc(2);
-        string_sexp(res.val.good.sexp, string);
+        struct String *string = sexp_to_string(res.val.good.sexp);
         return string;
     } else {
         return string_from_cstr("TEST_ERROR");
