@@ -36,6 +36,21 @@ char* test_list[][3] = {
     {"==", "(let (f (lambda (x) (+ x 1))) (f 3))", "4"},
     {"==", "(let (f (let (y 3) (lambda (x) (+ x y)))) (let (y 1) (f 4)))", "7"},
     {"==", "((lambda (n) (+ n 1)) 2)", "3"},
+    {
+        // Test with fix-point combinator implementing recursive factorial.
+        "==",
+
+        "(let (fix (lambda (f) "
+                    "((lambda (x) (f (lambda (y) ((x x) y)))) "
+                     "(lambda (x) (f (lambda (y) ((x x) y))))))) "
+          "(let (fact (lambda (fct) "
+                       "(lambda (n) "
+                         "(if (= n 0) 1 (* n (fct (- n 1))))))) "
+            "(let (factorial (fix fact)) "
+              "(factorial 20))))",
+
+        "2432902008176640000"
+    }
 };
 
 int test_list_len = sizeof(test_list) / sizeof(test_list[0]);
