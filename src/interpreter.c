@@ -112,6 +112,14 @@ struct Value* make_integer(long l) {
     return val;
 }
 
+struct Value* make_boolean(bool b) {
+    struct Value* val = malloc(sizeof(struct Value));
+    val->vt = VT_BOOLEAN;
+    val->val.boolean = b;
+    val->ref_count = 1;
+    return val;
+}
+
 struct Value NilV = {VT_SEXP, .val.sexp = &Nil, .ref_count = -1};
 
 struct Binding* add_binding(struct Symbol* id, struct Value* val,
@@ -192,9 +200,22 @@ struct Value* eval_integer(struct Sexp* sexp) {
     }
 }
 
+struct Value* eval_boolean(struct Sexp* sexp) {
+    if (sexp->type != SYM) {
+        return make_error("Impossible!");
+    }
+    if (string_eq_cstr(sexp->val.sym->str, "true")) {
+        return make_boolean(true);
+    } else if (string_eq_cstr(sexp->val.sym->str, "false")) {
+        return make_boolean(false);
+    } else {
+        return make_error("Could not parse boolean!");
+    }
+}
+
 struct Value* eval(struct Sexp* sexp, struct Binding* bindings);
 
-enum INT_OP {INT_ADD, INT_SUB, INT_MUL, INT_DIV};
+enum INT_OP {INT_ADD, INT_SUB, INT_MUL, INT_DIV, INT_EQ};
 
 struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                          struct Binding* bindings) {
@@ -229,16 +250,16 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                     if (arg1->vt == VT_INTEGER && arg2->vt == VT_INTEGER) {
                         long int_a1 = arg1->val.integer;
                         long int_a2 = arg2->val.integer;
-                        long long_res;
+                        struct Value* res;
                         switch (op) {
                         case INT_ADD:
-                            long_res = int_a1 + int_a2;
+                            res = make_integer(int_a1 + int_a2);
                             break;
                         case INT_SUB:
-                            long_res = int_a1 - int_a2;
+                            res = make_integer(int_a1 - int_a2);
                             break;
                         case INT_MUL:
-                            long_res = int_a1 * int_a2;
+                            res = make_integer(int_a1 * int_a2);
                             break;
                         case INT_DIV:
                             if (0 == int_a2) {
@@ -246,10 +267,12 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
                                 value_dec_ref_or_free(arg2);
                                 return make_error("Cannot divide by zero!");
                             }
-                            long_res = int_a1 / int_a2;
+                            res = make_integer(int_a1 / int_a2);
+                            break;
+                        case INT_EQ:
+                            res = make_boolean(int_a1 == int_a2);
                             break;
                         }
-                        struct Value* res = make_integer(long_res);
                         value_dec_ref_or_free(arg1);
                         value_dec_ref_or_free(arg2);
                         return res;
@@ -262,6 +285,43 @@ struct Value* eval_intop(struct Sexp* sexp, enum INT_OP op,
             }
         }
     }
+}
+
+struct Value* eval_if(struct Sexp* sexp, struct Binding* bindings) {
+    struct Sexp* cdr = sexp->val.list.cdr;
+    if (cdr->type != LIST) {
+        return make_error("Expected a conditional guard!");
+    }
+    struct Sexp* cond = cdr->val.list.car;
+    struct Sexp* cddr = cdr->val.list.cdr;
+    if (cddr->type != LIST) {
+        return make_error("Expected a true branch!");
+    }
+    struct Sexp* true_branch = cddr->val.list.car;
+    struct Sexp* cdddr = cddr->val.list.cdr;
+    if (cdddr->type != LIST) {
+        return make_error("Expected a false branch!");
+    }
+    struct Sexp* false_branch = cdddr->val.list.car;
+    struct Sexp* cddddr = cdddr->val.list.cdr;
+    if (cddddr->type != NIL) {
+        return make_error("Unexpected extra form after the false branch!");
+    }
+
+    struct Value* cond_val = eval(cond, bindings);
+
+    if (cond_val->vt == VT_ERROR) {
+        return cond_val;
+    }
+
+    struct Value* res;
+    if (cond_val->vt == VT_BOOLEAN && cond_val->val.boolean == false) {
+        res = eval(false_branch, bindings);
+    } else {
+        res = eval(true_branch, bindings);
+    }
+    value_dec_ref_or_free(cond_val);
+    return res;
 }
 
 struct Value* eval_let(struct Sexp* sexp, struct Binding* bindings) {
@@ -343,7 +403,13 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
         } else {
             value_free(v);
             struct Value* v2 = eval_integer(sexp);
-            return v2;
+            if (v2->vt != VT_ERROR) {
+                return v2;
+            } else {
+                value_free(v2);
+                struct Value* v3 = eval_boolean(sexp);
+                return v3;
+            }
         }
     } else if (sexp->type == LIST) {
         struct Sexp* car = sexp->val.list.car;
@@ -358,6 +424,10 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
                 return eval_intop(sexp, INT_MUL, bindings);
             } else if (string_eq_cstr(car->val.sym->str, "/")) {
                 return eval_intop(sexp, INT_DIV, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "=")) {
+                return eval_intop(sexp, INT_EQ, bindings);
+            } else if (string_eq_cstr(car->val.sym->str, "if")) {
+                return eval_if(sexp, bindings);
             } else if (string_eq_cstr(car->val.sym->str, "let")) {
                 return eval_let(sexp, bindings);
             } else if (string_eq_cstr(car->val.sym->str, "lambda")) {
