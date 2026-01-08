@@ -35,6 +35,7 @@ char* test_list[][3] = {
     {"==", "(let (x 5) (let (x 3) (+ x x)))", "6"},
     {"==", "(let (f (lambda (x) (+ x 1))) (f 3))", "4"},
     {"==", "(let (f (let (y 3) (lambda (x) (+ x y)))) (let (y 1) (f 4)))", "7"},
+    {"==", "((lambda (n) (+ n 1)) 2)", "3"},
 };
 
 int test_list_len = sizeof(test_list) / sizeof(test_list[0]);

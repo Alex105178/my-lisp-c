@@ -386,11 +386,35 @@ struct Value* eval_lambda(struct Sexp* sexp, struct Binding* bindings) {
     return value_make_lambda(body, bindings, arg->val.sym);
 }
 
-struct Value* eval_apply(struct Lambda* lambda, struct Sexp* arg,
-                         struct Binding* bindings) {
+struct Value* eval_apply(struct Sexp* sexp, struct Binding* bindings) {
+    struct Sexp* car = sexp->val.list.car;
+
+    struct Value* lambda = eval(car, bindings);
+    if (lambda->vt != VT_LAMBDA) {
+        if (lambda->vt == VT_ERROR) {
+            return lambda;
+        } else {
+            value_dec_ref_or_free(lambda);
+            return make_error(
+                "Expected a lambda value in function application!");
+        }
+    }
+
+    struct Sexp* cdr = sexp->val.list.cdr;
+    if (cdr->type != LIST) {
+        value_dec_ref_or_free(lambda);
+        return make_error("Expected an argument!");
+    }
+    struct Sexp* arg = cdr->val.list.car;
+    struct Sexp* cddr = cdr->val.list.cdr;
+    if (cddr->type != NIL) {
+        value_dec_ref_or_free(lambda);
+        return make_error("Expected only one argument!");
+    }
     struct Value* arg_val = eval(arg, bindings);
-    struct Binding* ctx = add_binding(lambda->arg, arg_val, lambda->context);
-    struct Value* res = eval(lambda->body, ctx);
+    struct Binding* ctx = add_binding(lambda->val.lambda->arg, arg_val,
+                                      lambda->val.lambda->context);
+    struct Value* res = eval(lambda->val.lambda->body, ctx);
     dec_ref_top_binding(ctx);
     return res;
 }
@@ -408,7 +432,11 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
             } else {
                 value_free(v2);
                 struct Value* v3 = eval_boolean(sexp);
-                return v3;
+                if (v3->vt != VT_ERROR) {
+                    return v3;
+                }
+                value_free(v3);
+                return make_error("Unrecognized identifier!");
             }
         }
     } else if (sexp->type == LIST) {
@@ -433,29 +461,10 @@ struct Value* eval(struct Sexp* sexp, struct Binding* bindings) {
             } else if (string_eq_cstr(car->val.sym->str, "lambda")) {
                 return eval_lambda(sexp, bindings);
             } else {
-                struct Value* maybe_lamb = find_binding(bindings, car->val.sym);
-                if (VT_LAMBDA != maybe_lamb->vt) {
-                    value_dec_ref_or_free(maybe_lamb);
-                    return make_error("Cannot apply non-lambda value!");
-                }
-                struct Sexp* cdr = sexp->val.list.cdr;
-                if (cdr->type != LIST) {
-                    value_dec_ref_or_free(maybe_lamb);
-                    return make_error("Expected an argument!");
-                }
-                struct Sexp* arg = cdr->val.list.car;
-                struct Sexp* cddr = cdr->val.list.cdr;
-                if (cddr->type != NIL) {
-                    value_dec_ref_or_free(maybe_lamb);
-                    return make_error("Expected only one argument!");
-                }
-                struct Value* res =
-                    eval_apply(maybe_lamb->val.lambda, arg, bindings);
-                value_dec_ref_or_free(maybe_lamb);
-                return res;
+                return eval_apply(sexp, bindings);
             }
         } else { // car->type == LIST
-            return eval(car, bindings);
+            return eval_apply(sexp, bindings);
         }
     } else { // sexp->type == NIL
         return &NilV;
